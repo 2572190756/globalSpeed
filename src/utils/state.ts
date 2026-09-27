@@ -195,6 +195,39 @@ async function pushHandleAddPin(base: AnyDict, tabId: number, inheritTabId: numb
 
 type SubViewCallback = (view: StateView, forOnLaunch?: boolean) => void
 
+type LaunchWaiter = { resolve: (value: AnyDict) => void; reject: (reason?: unknown) => void }
+
+let launchKeys: Set<string> | undefined
+let launchWaiters: LaunchWaiter[] = []
+
+/** One storage.local.get shared by every SubscribeView that starts within the same tick.
+ *  A popup/options mount starts many subscriptions at once, and each one would otherwise
+ *  issue its own read; this coalesces them into a single get whose result is distributed. */
+function batchLaunchGet(keys: Set<string>): Promise<AnyDict> {
+	if (!launchKeys) {
+		launchKeys = new Set(keys)
+		setTimeout(() => {
+			void runLaunchBatch()
+		}, 0)
+	} else {
+		for (const key of keys) launchKeys.add(key)
+	}
+	return new Promise<AnyDict>((resolve, reject) => launchWaiters.push({ resolve, reject }))
+}
+
+async function runLaunchBatch() {
+	const keys = launchKeys
+	const waiters = launchWaiters
+	launchKeys = undefined
+	launchWaiters = []
+	try {
+		const data = await chrome.storage.local.get([...(keys as Set<string>)])
+		for (const waiter of waiters) waiter.resolve(data)
+	} catch (error) {
+		for (const waiter of waiters) waiter.reject(error)
+	}
+}
+
 export class SubscribeView {
 	selector: StateViewSelector
 	cbs: Set<SubViewCallback> = new Set()
@@ -226,6 +259,9 @@ export class SubscribeView {
 
 		chrome.storage.local.onChanged.addListener(this.handleChange)
 		if (this.onLaunch) {
+			// Pre-fill the raw map from the shared launch batch; handleChange then skips its
+			// own read and goes straight to extracting and notifying the first view.
+			this.rawMap = await batchLaunchGet(this.watchKeys)
 			await this.handleChange(null, true)
 		}
 	}

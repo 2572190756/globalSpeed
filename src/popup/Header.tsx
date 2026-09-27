@@ -362,10 +362,10 @@ async function showOverlayForKebab(sawCount: number) {
 	const option = document.querySelector(".shortcutsKebabOption")
 	if (!option) return
 
-	// Update count (Once per session at most)
-	if (alreadyUpdatedCount) {
+	// Update count once per popup session at most; the false branch used to fall through
+	// and bump the count on every overlay, burning through the 5-show budget too fast.
+	if (!alreadyUpdatedCount) {
 		alreadyUpdatedCount = true
-	} else {
 		pushView({ override: { sawEnableShortcutOverlayCount: (sawCount || 0) + 1 } })
 	}
 
