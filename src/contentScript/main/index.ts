@@ -212,10 +212,7 @@ class StratumClient {
 		}
 	}
 	send = (data: any) => {
-		native.dispatchEvent.call(
-			this.#parasite,
-			new native.CustomEvent(this.#serverName, { detail: native.JSON.stringify({ type: "MSG", data }) }),
-		)
+		native.dispatchEvent.call(this.#parasite, new native.CustomEvent(this.#serverName, { detail: native.JSON.stringify({ type: "MSG", data }) }))
 	}
 	wiggleOn = (parent: HTMLElement | ShadowRoot) => {
 		native.appendChild.call(parent, this.#parasite)
