@@ -1,6 +1,7 @@
 import { LuPlus } from "react-icons/lu"
 import { gvar } from "@/globalVar"
 import { produce } from "@/utils/helper"
+import { activateOnKeyDown } from "./activateOnKeyDown"
 import { NumericInput } from "./NumericInput"
 import { Tooltip } from "./Tooltip"
 import { Button } from "./ui/button"
@@ -40,7 +41,10 @@ export function CycleInput(props: CycleInputProps) {
 								{props.values.length > 0 && (
 									<Tooltip title={gvar.gsm.token.delete}>
 										<div
-											className="absolute -top-1.25 -right-1.25 h-2.75 w-2.75 rounded-full border border-destructive bg-destructive/12 opacity-0 group-hover:opacity-90 hover:opacity-100"
+											role="button"
+											aria-label={gvar.gsm.token.delete}
+											tabIndex={0}
+											className="absolute -top-1.25 -right-1.25 h-2.75 w-2.75 rounded-full border border-destructive bg-destructive/12 opacity-0 group-hover:opacity-90 hover:opacity-100 focus-visible:opacity-100"
 											onClick={(e) => {
 												props.onChange(
 													produce(props.values, (d) => {
@@ -48,6 +52,13 @@ export function CycleInput(props: CycleInputProps) {
 													}),
 												)
 											}}
+											onKeyDown={activateOnKeyDown(() =>
+												props.onChange(
+													produce(props.values, (d) => {
+														d.splice(i, 1)
+													}),
+												),
+											)}
 										/>
 									</Tooltip>
 								)}

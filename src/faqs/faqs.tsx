@@ -2,6 +2,7 @@ import { ReactElement, ReactNode, useState } from "react"
 import { createRoot } from "react-dom/client"
 import { FaMousePointer, FaPowerOff } from "react-icons/fa"
 import { IoEllipsisVertical } from "react-icons/io5"
+import { activateOnKeyDown } from "@/comps/activateOnKeyDown"
 import { Pin, Zap } from "@/comps/svgs"
 import { Button } from "@/comps/ui/button"
 import "@/main.css"
@@ -308,8 +309,17 @@ function Item(props: { q: string | ReactElement; a: ReactElement }) {
 	const [hidden, setHidden] = useState(true)
 	return (
 		<div className="mb-2.5">
-			<div className="grid grid-cols-[max-content_1fr] items-center gap-x-2.5 p-1.25 text-2xl" onClick={() => setHidden(!hidden)}>
-				<Button className="min-w-7.5">{hidden ? "+" : "-"}</Button>
+			<div
+				role="button"
+				aria-expanded={!hidden}
+				tabIndex={0}
+				className="grid grid-cols-[max-content_1fr] items-center gap-x-2.5 p-1.25 text-2xl"
+				onClick={() => setHidden(!hidden)}
+				onKeyDown={activateOnKeyDown(() => setHidden(!hidden))}
+			>
+				<Button tabIndex={-1} className="min-w-7.5">
+					{hidden ? "+" : "-"}
+				</Button>
 				<div>{props.q}</div>
 			</div>
 			{!hidden && props.a}

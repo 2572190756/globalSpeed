@@ -28,10 +28,17 @@ type HeaderActionProps = ComponentPropsWithRef<"div"> & {
 	unpadded?: boolean
 }
 
-function HeaderAction({ active, beat, className, muted, unpadded, ...props }: HeaderActionProps) {
+function HeaderAction({ active, beat, className, muted, unpadded, onKeyDown, ...props }: HeaderActionProps) {
 	return (
 		<div
 			{...props}
+			{...(props.onClick ? { role: "button", tabIndex: 0 } : {})}
+			onKeyDown={(e) => {
+				onKeyDown?.(e)
+				if (!props.onClick || (e.key !== "Enter" && e.key !== " ")) return
+				e.preventDefault()
+				props.onClick(new MouseEvent("click") as unknown as React.MouseEvent<HTMLDivElement, MouseEvent>)
+			}}
 			className={cn(
 				"cursor-pointer px-1.25 text-secondary-foreground icon-owner hover:opacity-90 [&>svg]:align-baseline",
 				active && "text-primary",

@@ -444,3 +444,10 @@ body {
 		transform: scale(1.1);
 	}
 }
+
+/* Keyboard focus ring for non-native interactive elements (div/span/svg promoted with role="button" or "menuitem"). */
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}

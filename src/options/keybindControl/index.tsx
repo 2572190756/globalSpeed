@@ -1,5 +1,6 @@
 import { RefObject, useState } from "react"
 import { FaRegEdit } from "react-icons/fa"
+import { activateOnKeyDown } from "@/comps/activateOnKeyDown"
 import { Minmax } from "@/comps/Minmax"
 import { Tooltip } from "@/comps/Tooltip"
 import { Button } from "@/comps/ui/button"
@@ -138,6 +139,9 @@ export const KeybindControl = (props: KeybindControlProps) => {
 			{value.condition && getSelectedParts(value.condition).length ? (
 				<Tooltip title={gvar.gsm.options.rules.conditions}>
 					<div
+						role="button"
+						tabIndex={0}
+						aria-label={gvar.gsm.options.rules.conditions}
 						className="absolute -top-1.25 -right-3 flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-destructive px-1.5 text-sm text-destructive-foreground"
 						onClick={() => setShow(!show)}
 						onContextMenu={(e) => {
@@ -151,6 +155,7 @@ export const KeybindControl = (props: KeybindControlProps) => {
 								e.preventDefault()
 							}
 						}}
+						onKeyDown={activateOnKeyDown(() => setShow(!show))}
 					>
 						{getSelectedParts(value.condition).length}
 					</div>

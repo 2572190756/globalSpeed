@@ -3,6 +3,7 @@ import { FaBackward, FaForward, FaMousePointer, FaPause, FaPlay } from "react-ic
 import { GrRevert } from "react-icons/gr"
 import { IoMdVolumeHigh, IoMdVolumeLow, IoMdVolumeOff } from "react-icons/io"
 import { MdPictureInPictureAlt } from "react-icons/md"
+import { activateOnKeyDown } from "@/comps/activateOnKeyDown"
 import { SliderInput } from "@/comps/Slider"
 import { Tooltip } from "@/comps/Tooltip"
 import { Button } from "@/comps/ui/button"
@@ -34,23 +35,28 @@ export function MediaView(props: {
 	const currentTab = gvar.tabInfo?.tabId === tabId
 	const displayedVolume = info.muted ? 0 : clamp(0, 1, info.volume)
 
+	const showFormattedInfo = async (el: HTMLElement) => {
+		let probe = await chrome.tabs.sendMessage(info.tabInfo.tabId, { type: "MEDIA_PROBE", key: info.key, formatted: true } as Messages, {
+			frameId: info.tabInfo.frameId || 0,
+		})
+		if (!probe) return
+		feedbackText(probe.formatted, { y: el.getBoundingClientRect().top - 50 }, 1000 * 30)
+	}
+
 	return (
 		<div className="border-t border-border px-1.25 py-2.5 first:mt-4">
 			{/* Header */}
 			<div className="mb-0.5 wrap-anywhere">
 				<div className="flex items-center">
 					<span
+						role="button"
+						tabIndex={0}
 						onClick={async (e) => {
-							let probe = await chrome.tabs.sendMessage(
-								info.tabInfo.tabId,
-								{ type: "MEDIA_PROBE", key: info.key, formatted: true } as Messages,
-								{
-									frameId: info.tabInfo.frameId || 0,
-								},
-							)
-							if (!probe) return
-							feedbackText(probe.formatted, { y: (e.target as HTMLDivElement).getBoundingClientRect().top - 50 }, 1000 * 30)
+							await showFormattedInfo(e.currentTarget)
 						}}
+						onKeyDown={activateOnKeyDown(async (e) => {
+							await showFormattedInfo(e.currentTarget as HTMLElement)
+						})}
 						className="text-xs opacity-55 hover:underline hover:opacity-100"
 						title={info.domain}
 					>

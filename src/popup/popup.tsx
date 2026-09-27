@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { createRoot } from "react-dom/client"
 import { FaPowerOff } from "react-icons/fa"
+import { activateOnKeyDown } from "@/comps/activateOnKeyDown"
 import { gvar } from "@/globalVar"
 import { PageReachableProvider } from "@/hooks/usePageReachable"
 import { useThemeSync } from "@/hooks/useThemeSync"
@@ -53,6 +54,8 @@ export function App(props: {}) {
 
 	return view.superDisable ? (
 		<div
+			role="button"
+			tabIndex={0}
 			className="cursor-pointer bg-background p-2.5 text-secondary-foreground"
 			onClick={() => {
 				setView({ superDisable: false, enabled: true })
@@ -61,6 +64,9 @@ export function App(props: {}) {
 				e.preventDefault()
 				setView({ superDisable: false, enabled: true })
 			}}
+			onKeyDown={activateOnKeyDown(() => {
+				setView({ superDisable: false, enabled: true })
+			})}
 		>
 			<FaPowerOff size="1.78rem" />
 		</div>

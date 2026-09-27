@@ -27,6 +27,7 @@ export const Menu = (props: MenuProps) => {
 		<ModalBase className="bg-transparent backdrop-brightness-60" onClose={props.onClose}>
 			<div
 				ref={props.menuRef}
+				role="menu"
 				style={centered ? undefined : { left: `${props.position.x}px`, top: `${props.position.y}px` }}
 				className={cn(
 					"fixed z-menu rounded-lg border-2 border-border bg-popover text-popover-foreground select-none",
@@ -39,10 +40,28 @@ export const Menu = (props: MenuProps) => {
 						if (v.close) props.onClose()
 					}
 
+					const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+						if (e.key === "Enter" || e.key === " ") {
+							e.preventDefault()
+							handleClick(e as unknown as React.MouseEvent<HTMLDivElement>)
+						} else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+							e.preventDefault()
+							const items = [...e.currentTarget.parentElement.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+							const index = items.indexOf(e.currentTarget)
+							const next = items[(index + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]
+							next?.focus()
+						} else if (e.key === "Escape") {
+							props.onClose()
+						}
+					}
+
 					return (
 						<div
 							key={v.name}
+							role="menuitem"
+							tabIndex={0}
 							onClick={handleClick}
+							onKeyDown={handleKeyDown}
 							className={cn(
 								"grid cursor-pointer grid-cols-[20px_auto] border-b border-border py-1.25 pr-5 pl-2.5 leading-[1.5] opacity-85 hover:opacity-100",
 								v.className,

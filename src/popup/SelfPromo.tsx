@@ -1,5 +1,6 @@
 import { useMemo } from "react"
 import { FaRegQuestionCircle } from "react-icons/fa"
+import { activateOnKeyDown } from "@/comps/activateOnKeyDown"
 import { Tooltip } from "@/comps/Tooltip"
 import { useStateView } from "@/hooks/useStateView"
 import { SelfPromoConfig } from "@/types"
@@ -28,10 +29,15 @@ function PromoContent({ config }: { config?: SelfPromoConfig }) {
 			className={`mx-1.25 grid grid-cols-[1fr_max-content] items-center gap-x-1.5 border-t border-border py-2.5 pb-1 select-none [.SpeedControl+&]:mt-5`}
 		>
 			<div
+				role="button"
+				tabIndex={0}
 				className="group cursor-pointer"
 				onClick={() => {
 					chrome.tabs.create({ url: entry.link })
 				}}
+				onKeyDown={activateOnKeyDown(() => {
+					chrome.tabs.create({ url: entry.link })
+				})}
 			>
 				{/* Primary */}
 				<span className="text-promo-md italic opacity-70">{entry.primary}</span>
