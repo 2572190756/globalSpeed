@@ -28,6 +28,22 @@ declare global {
 	}
 }
 
+/** Rendered immediately, before the launch data (locale, active tab, view) has arrived,
+ * so the popup never flashes a blank document while those fast but asynchronous reads run. */
+function PopupSkeleton() {
+	return (
+		<div className="flex flex-col gap-2.5 p-2.5">
+			<div className="h-10 animate-pulse rounded-lg bg-secondary/70" />
+			<div className="grid grid-cols-3 gap-2.5">
+				<div className="h-12 animate-pulse rounded-lg bg-secondary/70" />
+				<div className="h-12 animate-pulse rounded-lg bg-secondary/70" />
+				<div className="h-12 animate-pulse rounded-lg bg-secondary/70" />
+			</div>
+			<div className="h-20 animate-pulse rounded-lg bg-secondary/70" />
+		</div>
+	)
+}
+
 export function App(props: {}) {
 	const [panel, setPanel] = useState(0)
 	const [view, setView] = useStateView({ superDisable: true, hideGrant: true })
@@ -61,6 +77,9 @@ export function App(props: {}) {
 
 if (isMobile()) document.documentElement.classList.add("mobile")
 
+const root = createRoot(document.querySelector("#root"))
+root.render(<PopupSkeleton />)
+
 Promise.all([
 	loadGsm().then((gsm) => {
 		gvar.gsm = gsm
@@ -74,7 +93,6 @@ Promise.all([
 	handleFreshState(),
 ]).then(() => {
 	processInitialView()
-	const root = createRoot(document.querySelector("#root"))
 	root.render(
 		<ErrorFallback>
 			<PageReachableProvider>

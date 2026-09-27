@@ -24,7 +24,7 @@ export function MainPanel(props: {}) {
 				}}
 			/>
 			{view.hideMediaView ? null : <MediaViews />}
-			{<SelfPromo />}
+			<SelfPromo />
 		</div>
 	)
 }

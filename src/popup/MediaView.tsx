@@ -216,6 +216,7 @@ export function MediaView(props: {
 function MediaSeekBar({ progress, onSeek, accent }: { progress?: MediaProgress; onSeek: (time: number) => void; accent: boolean }) {
 	const [preview, setPreview] = useState<number | null>(null)
 	const dragging = useRef(false)
+	const changed = useRef(false)
 	const duration = progress?.duration
 	const canSeek = Number.isFinite(duration) && duration > 0
 	const currentTime = canSeek ? clamp(0, duration, preview ?? progress.currentTime) : Math.max(0, progress?.currentTime ?? 0)
@@ -241,11 +242,14 @@ function MediaSeekBar({ progress, onSeek, accent }: { progress?: MediaProgress; 
 				value={canSeek ? currentTime : 0}
 				onPointerDown={(e) => {
 					dragging.current = true
+					changed.current = false
 					e.currentTarget.setPointerCapture(e.pointerId)
 				}}
 				onPointerUp={(e) => {
 					dragging.current = false
-					onSeek(e.currentTarget.valueAsNumber)
+					// onChange already sought during the drag; only a pointer that never moved
+					// the value (click on the current position) needs a seek here.
+					if (!changed.current) onSeek(e.currentTarget.valueAsNumber)
 				}}
 				onPointerCancel={() => {
 					dragging.current = false
@@ -256,6 +260,7 @@ function MediaSeekBar({ progress, onSeek, accent }: { progress?: MediaProgress; 
 					setPreview(null)
 				}}
 				onChange={(e) => {
+					changed.current = true
 					setPreview(e.target.valueAsNumber)
 					onSeek(e.target.valueAsNumber)
 				}}

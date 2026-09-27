@@ -41,11 +41,24 @@ const Options = (props: { gsm: Gsm }) => {
 	)
 }
 
+/** Rendered immediately; loadReact() replaces it once the launch data has arrived. */
+function OptionsSkeleton() {
+	return (
+		<div id="App" className="mt-10 w-[950px]">
+			<div className="h-14 animate-pulse rounded-xl bg-secondary/60" />
+			<div className="mt-5 h-40 animate-pulse rounded-xl bg-secondary/60" />
+			<div className="mt-5 h-52 animate-pulse rounded-xl bg-secondary/60" />
+			<div className="mt-5 h-36 animate-pulse rounded-xl bg-secondary/60" />
+		</div>
+	)
+}
+
 if (isMobile()) document.documentElement.classList.add("mobile")
+window.root = createRoot(document.querySelector("#root"))
+window.root.render(<OptionsSkeleton />)
 Promise.all([loadGsm(), requestTabInfo(), handleFreshState()]).then(([gsm, tabInfo]) => {
 	gvar.isOptionsPage = true
 	gvar.tabInfo = tabInfo
-	window.root = createRoot(document.querySelector("#root"))
 	gvar.subscribeLanguage = new SubscribeView({ language: true }, gvar.tabInfo?.tabId, false, async () => {
 		const gsm = await loadGsm()
 		loadReact(gsm)

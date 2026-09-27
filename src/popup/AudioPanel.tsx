@@ -35,7 +35,8 @@ export function AudioPanel(props: {}) {
 	let starKey: "audioFxAlt" | "audioFx" = rightTab ? "audioFxAlt" : "audioFx"
 	const ensureStar = (d: typeof view) => (d[starKey] = d[starKey] || getDefaultAudioFx())
 	const ensureCaptured = async () => {
-		setTimeout(() => setView({ enabled: true }), 0.1)
+		// Let the capture-status indicator paint before the capture state change lands.
+		setTimeout(() => setView({ enabled: true }), 0)
 		if (status) return status
 		env.viaButton = false
 		return initTabCapture(gvar.tabInfo.tabId)

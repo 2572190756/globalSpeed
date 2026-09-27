@@ -11,9 +11,20 @@ declare global {
 	}
 }
 
+/** Locale JSONs are static per language, so cache the parsed result across loadGsm calls in
+ *  this page's lifetime (the language switcher and language-change subscribers call it again). */
+const localeCache = new Map<string, Promise<Gsm>>()
+
 export async function loadGsm(): Promise<Gsm> {
 	const language = (await chrome.storage.local.get("g:language"))["g:language"] as string
-	return readLocaleFile(getValidLocale(language))
+	const locale = getValidLocale(language)
+	let gsm = localeCache.get(locale)
+	if (!gsm) {
+		gsm = readLocaleFile(locale)
+		gsm.catch(() => localeCache.delete(locale)) // a failed fetch must not poison later retries
+		localeCache.set(locale, gsm)
+	}
+	return gsm
 }
 
 export async function requestGsm(): Promise<Gsm> {

@@ -16,7 +16,7 @@ export function CommandWarning(props: Props) {
 	env.keybinds = props.keybinds
 
 	useEffect(() => {
-		const handleInterval = () => {
+		const refresh = () => {
 			chrome.commands.getAll((cc) => {
 				const target = cc.some(
 					(c) => c.name.startsWith("command") && c.shortcut && !env.keybinds.some((kb) => kb.enabled && (kb.globalKey || "commandA") === c.name),
@@ -25,9 +25,23 @@ export function CommandWarning(props: Props) {
 			})
 		}
 
-		const intervalId = setInterval(handleInterval, 1000)
+		const onVisibility = () => {
+			document.visibilityState === "visible" && refresh()
+		}
+
+		// Shortcut bindings change either here (keybind edits land in storage.local) or in the
+		// external chrome://extensions shortcuts table (which this page only sees on refocus).
+		// Refresh on those events; a slow interval remains as a safety net for cross-window edits.
+		refresh()
+		chrome.storage.local.onChanged.addListener(refresh)
+		window.addEventListener("focus", refresh)
+		document.addEventListener("visibilitychange", onVisibility)
+		const intervalId = setInterval(refresh, 10_000)
 
 		return () => {
+			chrome.storage.local.onChanged.removeListener(refresh)
+			window.removeEventListener("focus", refresh)
+			document.removeEventListener("visibilitychange", onVisibility)
 			clearInterval(intervalId)
 		}
 	}, [])

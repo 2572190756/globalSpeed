@@ -21,7 +21,7 @@ export function useDevWarningType(hasJs: boolean): DevWarningType {
 			return
 		}
 
-		const handleInterval = () => {
+		const refresh = () => {
 			let target = DevWarningType.NO_SUPPORT
 			if (canPotentiallyUserScriptExecute()) {
 				target = canUserScript() ? DevWarningType.NONE : DevWarningType.ENABLE_USERSCRIPTS
@@ -31,10 +31,21 @@ export function useDevWarningType(hasJs: boolean): DevWarningType {
 			env.type = target
 		}
 
-		handleInterval()
-		const intervalId = setInterval(handleInterval, 300)
+		const onVisibility = () => {
+			document.visibilityState === "visible" && refresh()
+		}
+
+		// The "Allow user scripts" toggle lives in the external chrome://extensions page, so
+		// this page can only observe it when it regains focus; refresh there and keep a slow
+		// interval as a safety net for cross-window edits.
+		refresh()
+		window.addEventListener("focus", refresh)
+		document.addEventListener("visibilitychange", onVisibility)
+		const intervalId = setInterval(refresh, 2_000)
 
 		return () => {
+			window.removeEventListener("focus", refresh)
+			document.removeEventListener("visibilitychange", onVisibility)
 			clearInterval(intervalId)
 		}
 	}, [hasJs])
