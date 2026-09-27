@@ -798,16 +798,20 @@ export async function setValue(init: SetValueInit) {
 		const view = await fetchView({ elementFx: true, backdropFx: true }, init.tabInfo?.tabId)
 		const { element, backdrop } = intoFxFlags(kb.filterTarget)
 		const filterInfo = filterInfos[kb.filterOption]
+		// A stale/corrupt keybind may reference an unknown filter option; bail out instead of throwing.
+		if (!filterInfo) return
 		const star = filterInfo.isTransform ? "transforms" : "filters"
 		if (element && value != null) {
 			override.elementFx = produce(view.elementFx || getDefaultFx(), (d) => {
-				d[star].find((f) => f.name === kb.filterOption).value = value
+				const entry = d[star].find((f) => f.name === kb.filterOption)
+				if (entry) entry.value = value
 				if (value.toFixed(6) !== ref.default.toFixed(6)) d.enabled = true
 			})
 		}
 		if (backdrop && valueAlt != null) {
 			override.backdropFx = produce(view.backdropFx || getDefaultFx(), (d) => {
-				d[star].find((f) => f.name === kb.filterOption).value = valueAlt
+				const entry = d[star].find((f) => f.name === kb.filterOption)
+				if (entry) entry.value = valueAlt
 				if (valueAlt.toFixed(6) !== ref.default.toFixed(6)) d.enabled = true
 			})
 		}

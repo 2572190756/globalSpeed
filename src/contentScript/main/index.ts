@@ -174,14 +174,17 @@ class GhostMode {
 
 class StratumClient {
 	#parasite = document.createElement("div")
-	#parasiteRoot = this.#parasite.attachShadow({ mode: "open" })
 	#key = randomId()
 	#serverName = `GS_SERVER_${this.#key}`
 	#clientName = `GS_CLIENT_${this.#key}`
 
 	constructor() {
 		this.#parasite.id = "GS_PARASITE"
-		this.#parasiteRoot.addEventListener(this.#clientName, this.handle, { capture: true })
+		// The div itself is the channel bus. It is removed from the DOM right after the
+		// pairing handshake, so page scripts can never hold a reference to it (no open
+		// shadow root is exposed either). Listeners live on the detached node, which
+		// still receives events dispatched directly on it.
+		this.#parasite.addEventListener(this.#clientName, this.handle, { capture: true })
 		document.documentElement.appendChild(this.#parasite)
 		this.#parasite.dispatchEvent(new CustomEvent("GS_INIT", { detail: this.#key }))
 		this.#parasite.remove()
@@ -210,13 +213,13 @@ class StratumClient {
 	}
 	send = (data: any) => {
 		native.dispatchEvent.call(
-			this.#parasiteRoot,
+			this.#parasite,
 			new native.CustomEvent(this.#serverName, { detail: native.JSON.stringify({ type: "MSG", data }) }),
 		)
 	}
 	wiggleOn = (parent: HTMLElement | ShadowRoot) => {
 		native.appendChild.call(parent, this.#parasite)
-		native.dispatchEvent.call(this.#parasiteRoot, new native.CustomEvent(this.#serverName, { detail: native.JSON.stringify({ type: "WIGGLE" }) }))
+		native.dispatchEvent.call(this.#parasite, new native.CustomEvent(this.#serverName, { detail: native.JSON.stringify({ type: "WIGGLE" }) }))
 		native.elementRemove.call(this.#parasite)
 	}
 }

@@ -571,8 +571,12 @@ export function walkGetKey(obj: any, keys: string[]): any {
 }
 
 export function produce<T>(base: T, recipe: (draft: T) => void): T {
-	return produceImmer(base, recipe)
-	const clone = structuredClone(base)
-	recipe(clone)
-	return clone
+	try {
+		return produceImmer(base, recipe)
+	} catch {
+		// Fallback for bases immer refuses to draft (e.g. non-plain objects): mutate a clone.
+		const clone = structuredClone(base)
+		recipe(clone)
+		return clone
+	}
 }

@@ -139,15 +139,16 @@ export class EntireState {
 	set = async (override: AnyDict) => {
 		await this.init()
 
-		override["changeId"] = randomId()
+		// Copy rather than mutate the caller's object when tagging the change id.
+		const overrideWithId: AnyDict = { ...override, changeId: randomId() }
 
 		const changes = {} as chrome.storage.StorageChanges
-		for (let key in override) {
-			if (override[key] === undefined) continue
-			changes[key] = { newValue: override[key], oldValue: this.rawMap[key] }
+		for (let key in overrideWithId) {
+			if (overrideWithId[key] === undefined) continue
+			changes[key] = { newValue: overrideWithId[key], oldValue: this.rawMap[key] }
 		}
 
-		await Promise.all([this.handleChange(changes), chrome.storage.local.set(override)])
+		await Promise.all([this.handleChange(changes), chrome.storage.local.set(overrideWithId)])
 	}
 }
 

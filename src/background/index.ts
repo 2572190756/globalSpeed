@@ -169,7 +169,6 @@ declare global {
 		getSession: { type: "GET_SESSION"; keys: any }
 		setLocal: { type: "SET_LOCAL"; override: AnyDict }
 		getLocal: { type: "GET_LOCAL"; keys: any }
-		insertCss: { type: "INSERT_CSS"; value: string }
 		syncContextMenus: { type: "SYNC_CONTEXT_MENUS"; direct?: boolean }
 		sendMediaEventTo: { type: "SEND_MEDIA_EVENT_TO"; tabId: number; frameId?: number; event: MediaEvent; key: string }
 		setValue: { type: "SET_STATEFUL"; init: SetValueInit }
@@ -179,6 +178,9 @@ declare global {
 }
 
 chrome.runtime.onMessage.addListener((msg: Messages, sender, reply) => {
+	// Only the extension's own contexts (content scripts, popup/options, offscreen)
+	// can reach this listener; reject anything with a missing/foreign sender id.
+	if (!sender.id || sender.id !== chrome.runtime.id) return
 	if (msg.type === "REQUEST_TAB_INFO") {
 		reply({
 			tabId: sender.tab.id,
@@ -205,6 +207,8 @@ chrome.runtime.onMessage.addListener((msg: Messages, sender, reply) => {
 		)
 		return true
 	} else if (msg.type === "REQUEST_CREATE_TAB") {
+		// Only ever used to open the extension's own pages; block arbitrary URLs.
+		if (typeof msg.url !== "string" || !(msg.url.startsWith(chrome.runtime.getURL("")) || msg.url.startsWith("chrome://extensions/"))) return
 		chrome.tabs.create({
 			url: msg.url,
 		})
@@ -248,6 +252,9 @@ chrome.runtime.onMessage.addListener((msg: Messages, sender, reply) => {
 		)
 		return true
 	} else if (msg.type === "SET_LOCAL") {
+		// Global-state writes are only legitimate from extension pages/offscreen (no sender.tab);
+		// content scripts must never be able to rewrite global configuration through this path.
+		if (sender.tab) return
 		gvar.es.set(msg.override)
 	} else if (msg.type === "GET_LOCAL") {
 		;(gvar.es.get(msg.keys) as any).then(
@@ -255,17 +262,12 @@ chrome.runtime.onMessage.addListener((msg: Messages, sender, reply) => {
 			(err: any) => reply(null),
 		)
 		return true
-	} else if (msg.type === "INSERT_CSS") {
-		chrome.scripting.insertCSS({
-			css: msg.value,
-			target: {
-				tabId: sender.tab.id,
-				frameIds: [sender.frameId],
-			},
-		})
 	} else if (msg.type === "SYNC_CONTEXT_MENUS") {
 		msg.direct ? syncContextMenu() : syncContextMenuDeb()
 	} else if (msg.type === "SEND_MEDIA_EVENT_TO") {
+		// Content scripts may only relay media events within their own tab; extension
+		// pages (popup) and the background itself are free to target any tab.
+		if (sender.tab && msg.tabId !== sender.tab.id) return
 		reply(true)
 		chrome.tabs.sendMessage(msg.tabId, { type: "APPLY_MEDIA_EVENT", event: msg.event, key: msg.key }, { frameId: msg.frameId || 0 })
 	} else if (msg.type === "SET_STATEFUL") {
@@ -277,14 +279,18 @@ chrome.runtime.onMessage.addListener((msg: Messages, sender, reply) => {
 		return true
 	} else if (msg.type === "REQUEST_TOP_FRAME_URL") {
 		chrome.tabs.sendMessage(sender.tab.id, { type: "REQUEST_TOP_FRAME_URL" }, { frameId: 0 }, (resp) => {
-			chrome.tabs.sendMessage(
-				sender.tab.id,
-				{
-					type: "TOP_FRAME_URL_UPDATE",
-					value: resp.value,
-				} as Messages,
-				{ frameId: sender.frameId },
-			)
+			// Consume lastError: the top frame may have no content script (chrome://, PDF, ...).
+			void chrome.runtime.lastError
+			if (resp?.value != null) {
+				chrome.tabs.sendMessage(
+					sender.tab.id,
+					{
+						type: "TOP_FRAME_URL_UPDATE",
+						value: resp.value,
+					} as Messages,
+					{ frameId: sender.frameId },
+				)
+			}
 		})
 		reply(true)
 		return

@@ -1,6 +1,5 @@
 export class StratumServer {
 	parasite: HTMLDivElement
-	parasiteRoot: ShadowRoot
 	wiggleCbs = new Set<(target: Node & ParentNode) => void>()
 	msgCbs = new Set<(data: any) => void>()
 	initCbs = new Set<() => void>()
@@ -12,13 +11,15 @@ export class StratumServer {
 		window.addEventListener("GS_INIT", this.handleInit, { capture: true, once: true })
 	}
 	handleInit = (e: CustomEvent) => {
-		if (!(e.target instanceof HTMLDivElement && e.target.id === "GS_PARASITE" && e.target.shadowRoot)) return
+		// The channel bus is the parasite div itself (the client keeps it detached after
+		// pairing, so page scripts cannot obtain a reference to it). No open shadow root
+		// is involved, which removes the persistent eavesdropping/injection surface.
+		if (!(e.target instanceof HTMLDivElement && e.target.id === "GS_PARASITE" && e.target.isConnected)) return
 		this.parasite = e.target
-		this.parasiteRoot = e.target.shadowRoot
 		this.#serverName = `GS_SERVER_${e.detail}`
 		this.#clientName = `GS_CLIENT_${e.detail}`
 
-		this.parasiteRoot.addEventListener(this.#serverName, this.handle, { capture: true })
+		this.parasite.addEventListener(this.#serverName, this.handle, { capture: true })
 
 		this.initCbs.forEach((cb) => cb())
 		this.initCbs.clear()
@@ -30,6 +31,7 @@ export class StratumServer {
 		try {
 			detail = JSON.parse(e.detail)
 		} catch (err) {}
+		if (!detail) return
 
 		if (detail.type === "WIGGLE") {
 			const parent = this.parasite.parentNode
@@ -42,6 +44,6 @@ export class StratumServer {
 		}
 	}
 	send = (data: any) => {
-		this.parasiteRoot.dispatchEvent(new CustomEvent(this.#clientName, { detail: JSON.stringify(data) }))
+		this.parasite.dispatchEvent(new CustomEvent(this.#clientName, { detail: JSON.stringify(data) }))
 	}
 }
